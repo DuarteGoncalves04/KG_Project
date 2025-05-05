@@ -1,0 +1,27 @@
+# Remote SPARQL access
+SPARQLWrapper==1.8.5
+
+# Ontology access
+Owlready2==0.40.0
+requests==2.31.0 
+
+# Required this version instead of 3.0
+pyparsing==3.1.1
+
+# RDF graph management
+rdflib==7.0.0 
+
+# Pandas: tabular data management
+pandas==2.2.1  
+
+# Levenshtein String similarity
+python-Levenshtein==0.23.0 
+
+# Reasoning
+owlrl==6.0.2 
+
+# Streamlit
+streamlit==1.33.0 
+
+# SpaCy
+spacy==3.7.4

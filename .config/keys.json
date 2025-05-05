@@ -1,0 +1,6 @@
+{
+    "OPENROUTER_API_KEY": "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",
+    "OPENROUTER_API_URL": "https://openrouter.ai/api/v1/chat/completions",
+    "OPENROUTER_API_MODEL": "microsoft/mai-ds-r1:free",
+    "KG_ENDPOINT": "https://query.wikidata.org/sparql"
+}
