@@ -1,4 +1,4 @@
-from backend import KnowledgeEngine
+from KnowledgeEngine import KnowledgeEngine
 import streamlit as st
 
 def setupUI():
