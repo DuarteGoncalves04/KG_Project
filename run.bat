@@ -2,7 +2,7 @@
 REM Batch file to launch Streamlit app with virtual environment
 
 SET VENV_PATH=.\venv\Scripts\activate
-SET APP_SCRIPT=main.py
+SET APP_SCRIPT=.\src\main.py
 
 echo Starting Knowledge Graph application...
 echo.

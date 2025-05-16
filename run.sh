@@ -2,7 +2,7 @@
 # Script to launch Streamlit app with virtual environment
 
 VENV_PATH="./venv/bin/activate"
-APP_SCRIPT="main.py"
+APP_SCRIPT="./src/main.py"
 
 echo "Starting Knowledge Graph application..."
 echo ""
