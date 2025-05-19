@@ -86,7 +86,8 @@ class KnowledgeEngine:
             list: A list of extracted themes.
         """
         system_msg = (
-            "Extract a list of up to 15 related high-level topics (themes) from the prompt. "
+            "Extract a list of up to 10 related high-level topics (themes) from the prompt."
+            "The first of the list should be the prompted theme."
             "Focus on real-world concepts such as fields (e.g., Artificial Intelligence), "
             "methods (e.g., Convolutional Neural Networks), or technologies (e.g., Deep Learning). "
             "Only return a valid JSON list of strings. No explanations or markdown."
@@ -164,7 +165,7 @@ class KnowledgeEngine:
         triples = []
         for theme, id in themes_id.items():
             query = f"""
-            SELECT ?propertyLabel ?valueLabel ?valueDescription WHERE {{
+            SELECT DISTINCT ?propertyLabel (SAMPLE(?valueLabel) AS ?valueLabel) (SAMPLE(?valueDescription) AS ?valueDescription) WHERE {{
                 wd:{id} ?p ?statement .
                 ?statement ?ps ?value .
                 ?property wikibase:directClaim ?ps .
@@ -176,9 +177,12 @@ class KnowledgeEngine:
                 
                 SERVICE wikibase:label {{ 
                     bd:serviceParam wikibase:language "en" .
+                    ?property rdfs:label ?propertyLabel .
+                    ?value rdfs:label ?valueLabel .
                 }}
             }}
-            LIMIT 15
+            GROUP BY ?propertyLabel
+            LIMIT 10
             """
             try:
                 response = requests.get(

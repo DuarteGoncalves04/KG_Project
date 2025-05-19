@@ -1,9 +1,9 @@
 {
-    "OPENROUTER_API_KEY": "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",
+    "OPENROUTER_API_KEY": "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",
     "OPENROUTER_API_URL": "https://openrouter.ai/api/v1/chat/completions",
     "_comment_Model1":"microsoft/mai-ds-r1:free",
     "OPENROUTER_API_MODEL": "nousresearch/deephermes-3-mistral-24b-preview:free",
     "SPARQL_ENDPOINT": "https://query.wikidata.org/sparql",
-    "WIKIDATA_API_URL": "https://www.wikidata.org/w/api.php"
+    "WIKIDATA_API_URL": "https://www.wikidata.org/w/api.php"    
 
 }

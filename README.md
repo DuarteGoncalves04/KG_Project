@@ -1,4 +1,4 @@
 
 
 To Run the system
-console: streamlit run main.py
+console: streamlit run src/main.pys
