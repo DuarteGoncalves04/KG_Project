@@ -219,7 +219,7 @@ class KnowledgeEngine:
         2. Formulate 1-2 thought-provoking questions
         3. Provide a concise summary answer
         
-        Return as JSON with these keys: {"facts": [], "questions": [], "answer": ""}"""
+        Return as JSON with these keys: {"facts": [], "questions": [], "summary": ""}"""
 
         # Format triples for LLM
         triplet_text = "\nTriples:\n" + "\n".join(
@@ -244,5 +244,5 @@ class KnowledgeEngine:
             return {
                 "facts": [],
                 "questions": [],
-                "answer": content or "No information could be generated."
+                "summary": content or "No information could be generated."
             }

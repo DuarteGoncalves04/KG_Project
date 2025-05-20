@@ -142,7 +142,7 @@ def showResponseCard(prompt, response):
 
 # ---------- Main App ----------
 
-def mainUI(debugUI=True):
+def mainUI(debugUI=False):
     setupUI()
     initialize_state()
 
