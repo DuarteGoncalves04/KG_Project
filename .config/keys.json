@@ -1,5 +1,5 @@
 {
-    "OPENROUTER_API_KEY": "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",
+    "OPENROUTER_API_KEY": "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",
     "OPENROUTER_API_URL": "https://openrouter.ai/api/v1/chat/completions",
     "_comment_Model1":"microsoft/mai-ds-r1:free",
     "OPENROUTER_API_MODEL": "nousresearch/deephermes-3-mistral-24b-preview:free",

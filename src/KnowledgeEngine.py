@@ -216,10 +216,20 @@ class KnowledgeEngine:
         """
         system_msg = """You are an educational assistant. For the given triples:
         1. Extract key facts relevant to the original question
-        2. Formulate 1-2 thought-provoking questions
+        2. Formulate 5-10 thought-provoking questions
         3. Provide a concise summary answer
         
-        Return as JSON with these keys: {"facts": [], "questions": [], "summary": ""}"""
+        Return as JSON with these keys: {"facts": [], "questions": [], "summary": ""}
+        The questions sections should be a dictionary of questions with the question, the 4 possible options and a correct answer
+        "questions": [
+            {
+                "question": "What is the capital of France?",
+                "options": ["Paris", "London", "Berlin", "Madrid"],
+                "correct_answer": "Paris"
+            },
+            ...
+        ]
+        """
 
         # Format triples for LLM
         triplet_text = "\nTriples:\n" + "\n".join(

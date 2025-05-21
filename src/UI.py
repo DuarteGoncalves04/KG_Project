@@ -90,7 +90,7 @@ def render_question_flashcard(questions, bg_color, border_color):
 
     index = st.session_state.question_index
     qdata = questions[index]
-    question, choices, correct = qdata['question'], qdata['choices'], qdata['correct']
+    question, choices, correct = qdata['question'], qdata['options'], qdata['correct_answer']
     radio_key, submit_key, feedback_key = f"q_radio_{index}", f"q_submit_{index}", f"q_feedback_{index}"
 
     render_card(f"❓ Question {index + 1}", question, bg_color, border_color)
