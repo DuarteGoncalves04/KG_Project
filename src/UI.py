@@ -5,39 +5,34 @@ import random
 # ---------- Constants ----------
 
 POST_IT_COLORS = ["#cdfc93", "#ff7ecd", "#71d7ff", "#ce81ff", "#fff68b"]
-SHARED_CARD_STYLE = """
-    background: {bg_color};
-    padding: 25px 20px;
-    border-radius: 12px;
-    max-width: 600px;
-    box-shadow: 5px 7px 15px rgba(0,0,0,0.3);
-    font-family: 'Comic Sans MS', cursive, sans-serif;
-    border: 2px solid {border_color};
-    margin-top: 20px;
-    position: relative;
-"""
+SHARED_CARD_STYLE = (
+    "background: {bg_color}; "
+    "padding: 25px 20px; "
+    "border-radius: 12px; "
+    "max-width: 600px; "
+    "box-shadow: 5px 7px 15px rgba(0,0,0,0.3); "
+    "font-family: 'Comic Sans MS', cursive, sans-serif; "
+    "border: 2px solid {border_color}; "
+    "margin-top: 20px; "
+    "position: relative;"
+)
 
-STICKER_DECORATION = """
-    position: absolute;
-    top: 0px;
-    left: -15px;
-    width: 60px;
-    height: 15px;
-    background: repeating-linear-gradient(
-        45deg,
-        #FFD580,
-        #FFD580 5px,
-        #FFA500 5px,
-        #FFA500 10px
-    );
-    border-radius: 3px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-    transform: rotate(-40deg);
-"""
+STICKER_DECORATION = (
+    "position: absolute; "
+    "top: 0px; "
+    "left: -15px; "
+    "width: 60px; "
+    "height: 15px; "
+    "background: repeating-linear-gradient(45deg, #FFD580, #FFD580 5px, #FFA500 5px, #FFA500 10px); "
+    "border-radius: 3px; "
+    "box-shadow: 0 1px 3px rgba(0,0,0,0.15); "
+    "transform: rotate(-40deg);"
+)
+
 
 
 # ---------- Utilities ----------
-
+    
 def setupUI():
     st.set_page_config(page_title="KG Project", page_icon=":guardsman:", layout="centered")
 
@@ -68,27 +63,34 @@ def render_card(title, content, bg_color, border_color, question_mode=False, cor
         f"<div style='position: relative; margin-top: 15px; margin-bottom: 15px; {base_style}'>",
         f"<div style='{STICKER_DECORATION}'></div>",
         f"<h3 style='color: #000000; margin-bottom: 10px;'>{title}</h3>",
-        f"<p style='font-size: 16px; color: #000000; white-space: pre-wrap;'>{content}</p>",
+        f"<p style='font-size: 16px; color: #000000; white-space: pre-wrap; margin: 0;'>{content}</p>",
         score_html,
         "</div>"
     ]
 
-    st.markdown("".join(html_parts), unsafe_allow_html=True)
+    html_str = "".join(html_parts)
+    st.markdown(html_str, unsafe_allow_html=True)
+    return html_str
+
 
 
 # ---------- UI Renderers ----------
 
 def render_summary_tab(prompt, summary, bg_color, border_color):
-    render_card(f"📝 About {prompt}", summary, bg_color, border_color)
+    card_sum_html = render_card(f"📝 About {prompt}", summary, bg_color, border_color)
+    
+    if st.button("Export as PNG"):
+        export_html_as_png(card_sum_html)
 
 def render_list_tab(title, items):
     st.markdown(f"<h4>{title}</h4>", unsafe_allow_html=True)
     st.markdown("<ul>" + "".join(f"<li>{item}</li>" for item in items) + "</ul>", unsafe_allow_html=True) if items else st.info("No items available.")
 
+
 def render_flashcard_tab(facts, bg_color, border_color):
     if facts:
         index = st.session_state.fact_index
-        render_card(f"📘 Fact {index + 1}", facts[index], bg_color, border_color)
+        card_tab_html = render_card(f"📘 Fact {index + 1}", facts[index], bg_color, border_color)
 
         # Custom column widths to control button placement
         col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.05])
@@ -100,11 +102,14 @@ def render_flashcard_tab(facts, bg_color, border_color):
         with col4:
             st.markdown("<div style='margin-top: 10px;'>", unsafe_allow_html=True)
             st.button("➡️", on_click=lambda: update_index('fact_index', 1), key="next_fact_btn")
+            
+            
+        if st.button("Export as PNG"):
+            export_html_as_png(card_tab_html)
+        
     else:
         st.info("No facts available.")
 
-
-        
 
 def render_question_flashcard(questions, bg_color, border_color):
     if not questions:
@@ -245,6 +250,45 @@ def showResponseCard(prompt, response):
             render_flashcard_tab(response.get('facts', []), bg_color, border_color)
         elif tab == 'questions':
             render_question_flashcard(response.get('questions', []), bg_color, border_color)
+            
+            
+# Export Flashcard 
+def export_html_as_png(html_str, filename="card.png"):
+    export_script = f"""
+    <div id="hidden-card" style="
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    ">
+      <div id="capture" style="display: inline-block;">
+        {html_str}
+      </div>
+    </div>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+      window.setTimeout(() => {{
+        html2canvas(document.getElementById('capture'), {{
+          backgroundColor: null,
+          scale: window.devicePixelRatio
+        }}).then(canvas => {{
+          canvas.toBlob(blob => {{
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '{filename}';
+            a.click();
+            URL.revokeObjectURL(url);
+          }});
+        }});
+      }}, 500);
+    </script>
+    """
+    st.components.v1.html(export_script, height=0, width=0, scrolling=False)
+
 
 # ---------- Main App ----------
 
