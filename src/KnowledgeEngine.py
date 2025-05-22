@@ -214,22 +214,49 @@ class KnowledgeEngine:
         Returns:
             dict: A dictionary containing the refined response with facts, questions, and an answer.
         """
-        system_msg = """You are an educational assistant. For the given triples:
-        1. Extract key facts relevant to the original question
-        2. Formulate 5-10 thought-provoking questions
-        3. Provide a concise summary answer
-        
-        Return as JSON with these keys: {"facts": [], "questions": [], "summary": ""}
-        The questions sections should be a dictionary of questions with the question, the 4 possible options and a correct answer
+                
+        system_msg = """
+        You are an educational assistant. Based on the given triples and the original user question:
+
+        Your task:
+        1. Prioritize and select the most educationally relevant triples **directly related to the main entity of the query**.
+        - Avoid over-general or tangential triples about broader topics unless they directly inform the main entity.
+        2. Extract key factual information that directly relates to the original question and the main entity.
+        3. Generate 5–10 thought-provoking multiple-choice questions based on the content:
+            - Each question must have 4 distinct answer options.
+            - One correct answer must be clearly indicated.
+            - Randomize the order of the answer options so the correct answer does not always appear first.
+            - All questions should be meaningful, relevant, and fact-based.
+        4. Write a concise and enriched paragraph summarizing the key insights:
+            - Focus the summary on the main entity and the original question.
+            - Do NOT simply list or repeat the facts.
+            - Integrate and elaborate on key ideas naturally and meaningfully.
+            - Add brief context where helpful (e.g., historical, cultural, practical).
+            - Ensure it reads fluently like a human educator's summary.
+            - Avoid robotic or repetitive phrasing.
+
+        Restrictions:
+        - Do NOT include any identifiers or metadata (e.g., "Kinobox ID", "template", or "category").
+        - Do NOT reference content marked or associated with copyright or templated classification systems.
+        - Avoid generic tautologies or trivial statements like "Portugal is covered under the topic Portugal."
+
+        Return a JSON object with this structure:
+        {
+        "facts": [ "Fact 1", "Fact 2", ... ],
         "questions": [
             {
-                "question": "What is the capital of France?",
-                "options": ["Paris", "London", "Berlin", "Madrid"],
-                "correct_answer": "Paris"
+            "question": "What is the capital of France?",
+            "options": ["Paris", "London", "Berlin", "Madrid"],
+            "correct_answer": "London"
             },
             ...
-        ]
+        ],
+        "summary": "Short, enriched, natural-language summary paragraph focused on the main entity."
+        }
+
+        Avoid any extra commentary or formatting. Output JSON only.
         """
+
 
         # Format triples for LLM
         triplet_text = "\nTriples:\n" + "\n".join(

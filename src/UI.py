@@ -18,7 +18,6 @@ SHARED_CARD_STYLE = """
 """
 
 STICKER_DECORATION = """
-    content: '';
     position: absolute;
     top: 0px;
     left: -15px;
@@ -35,6 +34,7 @@ STICKER_DECORATION = """
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transform: rotate(-40deg);
 """
+
 
 # ---------- Utilities ----------
 
@@ -54,14 +54,27 @@ def initialize_state():
     st.session_state.setdefault('last_prompt', "")
     st.session_state.setdefault('response_data', None)
 
-def render_card(title, content, bg_color, border_color):
-    st.markdown(f"""
-        <div style="{SHARED_CARD_STYLE.format(bg_color=bg_color, border_color=border_color)}">
-            <h3 style="color: #000000; margin-bottom: 10px;">{title}</h3>
-            <p style="font-size: 16px; color: #000000; white-space: pre-wrap;">{content}</p>
-            <div style="{STICKER_DECORATION}"></div>
-        </div>
-    """, unsafe_allow_html=True)
+def render_card(title, content, bg_color, border_color, question_mode=False, correct=0, total=0):
+    base_style = SHARED_CARD_STYLE.format(bg_color=bg_color, border_color=border_color)
+
+    score_html = ""
+    if question_mode:
+        score_html = (
+            f"<div style='position: absolute; top: 10px; right: 15px; "
+            f"font-size: 14px; font-weight: bold; color: #333;'>✅ {correct}/{total}</div>"
+        )
+
+    html_parts = [
+        f"<div style='position: relative; margin-top: 15px; margin-bottom: 15px; {base_style}'>",
+        f"<div style='{STICKER_DECORATION}'></div>",
+        f"<h3 style='color: #000000; margin-bottom: 10px;'>{title}</h3>",
+        f"<p style='font-size: 16px; color: #000000; white-space: pre-wrap;'>{content}</p>",
+        score_html,
+        "</div>"
+    ]
+
+    st.markdown("".join(html_parts), unsafe_allow_html=True)
+
 
 # ---------- UI Renderers ----------
 
@@ -77,11 +90,21 @@ def render_flashcard_tab(facts, bg_color, border_color):
         index = st.session_state.fact_index
         render_card(f"📘 Fact {index + 1}", facts[index], bg_color, border_color)
 
-        col1, col2, col3, col4 = st.columns(4)
-        with col1: st.button("⬅️", on_click=lambda: update_index('fact_index', -1), key="prev_fact_btn")
-        with col4: st.button("➡️", on_click=lambda: update_index('fact_index', 1), key="next_fact_btn")
+        # Custom column widths to control button placement
+        col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.05])
+
+        with col1:
+            st.markdown("<div style='margin-top: 10px;'>", unsafe_allow_html=True)
+            st.button("⬅️", on_click=lambda: update_index('fact_index', -1), key="prev_fact_btn")
+
+        with col4:
+            st.markdown("<div style='margin-top: 10px;'>", unsafe_allow_html=True)
+            st.button("➡️", on_click=lambda: update_index('fact_index', 1), key="next_fact_btn")
     else:
         st.info("No facts available.")
+
+
+        
 
 def render_question_flashcard(questions, bg_color, border_color):
     if not questions:
@@ -91,32 +114,115 @@ def render_question_flashcard(questions, bg_color, border_color):
     index = st.session_state.question_index
     qdata = questions[index]
     question, choices, correct = qdata['question'], qdata['options'], qdata['correct_answer']
-    radio_key, submit_key, feedback_key = f"q_radio_{index}", f"q_submit_{index}", f"q_feedback_{index}"
+    radio_key = f"q_radio_{index}"
+    feedback_key = f"q_feedback_{index}"
+    submitted_key = f"submitted_{index}"
 
-    render_card(f"❓ Question {index + 1}", question, bg_color, border_color)
-    selected = st.radio("Choose your answer:", choices, key=radio_key)
+    # Compute score once (before rendering card) based on current session_state
+    correct_count, answered_count = get_question_score(questions)
 
-    if st.button("Submit", key=submit_key):
-        if selected == correct:
-            st.session_state[feedback_key] = ("Correct! 🎉", "success")
+    # Render the question card first (with score)
+    render_card(
+        f"❓ Question {index + 1}",
+        question,
+        bg_color,
+        border_color,
+        question_mode=True,
+        correct=correct_count,
+        total=answered_count
+    )
+
+    # Get previously selected answer if available
+    saved_answer = st.session_state.get(radio_key)
+
+    # Show radio options after the card
+    if saved_answer is None and not st.session_state.get(submitted_key, False):
+        selected = st.radio(
+            "Choose your answer:",
+            choices,
+            index=None,
+            key=f"{radio_key}_tmp"
+        )
+        if selected is not None:
+            st.session_state[radio_key] = selected
+    else:
+        selected = st.radio(
+            "Choose your answer:",
+            choices,
+            index=choices.index(saved_answer) if saved_answer in choices else 0,
+            key=radio_key
+        )
+
+    # Handle submit button
+    if st.button("Submit", key=f"q_submit_{index}"):
+        selected = st.session_state.get(radio_key)
+        if selected is None:
+            st.warning("Please select an answer before submitting.")
         else:
-            st.session_state[feedback_key] = (f"Incorrect. The correct answer is: {correct}", "error")
+            st.session_state[submitted_key] = True
+            if selected == correct:
+                st.session_state[feedback_key] = ("Correct! 🎉", "success")
+            else:
+                st.session_state[feedback_key] = (f"Incorrect. The correct answer is: {correct}", "error")
 
-    if feedback_key in st.session_state:
-        msg, msg_type = st.session_state[feedback_key]
-        (st.success if msg_type == "success" else st.error)(msg)
+    # Show feedback only if submitted
+    if st.session_state.get(submitted_key):
+        selected = st.session_state.get(radio_key)
+        if selected is not None:
+            is_correct = (selected == correct)
+            render_feedback(is_correct, correct)
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: st.button("⬅️", on_click=lambda: update_index('question_index', -1), key="prev_question_btn")
-    with col4: st.button("➡️", on_click=lambda: update_index('question_index', 1), key="next_question_btn")
+    # Navigation buttons
+    col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1.05])
+    with col1:
+        st.button("⬅️", on_click=lambda: update_index('question_index', -1), key=f"prev_question_{index}")
+    with col4:
+        st.button("➡️", on_click=lambda: update_index('question_index', 1), key=f"next_question_{index}")
+
 
 def update_index(index_key, step):
     items = st.session_state.response_data.get(index_key.replace("_index", "s"), [])
-    if items:
-        st.session_state[index_key] = (st.session_state[index_key] + step) % len(items)
+    if not items:
+        return
+
+    current_index = st.session_state[index_key]
+    new_index = (current_index + step) % len(items)
+
+    # Only clear feedback view, not saved selections
+    st.session_state.pop(f"q_feedback_{current_index}", None)
+    st.session_state[index_key] = new_index
+
+def get_question_score(questions):
+    correct_count = 0
+    answered_count = 0
+    for i, q in enumerate(questions):
+        if st.session_state.get(f"submitted_{i}", False):
+            answered_count += 1
+            selected = st.session_state.get(f"q_radio_{i}")
+            if selected == q['correct_answer']:
+                correct_count += 1
+    return correct_count, answered_count
+
+
+def render_feedback(is_correct, correct_answer, max_width="600px", margin="margin-bottom: 15px;"):
+    if is_correct:
+        color_style = "background-color: #65db6d; color: #155724; padding: 10px; border-radius: 5px; font-weight: bold;"
+        message = "Correct! 🎉"
+    else:
+        color_style = "background-color: #d65e62; color: #721c24; padding: 10px; border-radius: 5px; font-weight: bold;"
+        message = f"Incorrect. The correct answer is: {correct_answer}"
+
+    st.markdown(
+        f"""
+        <div style="max-width: {max_width}; {margin} {color_style}">
+            {message}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 def render_tab_buttons():
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns([1, 0.9, 0.79])
     with col1: st.button("Summary", on_click=lambda: set_tab("summary"), key="tab_summary")
     with col2: st.button("Facts", on_click=lambda: set_tab("facts"), key="tab_facts")
     with col3: st.button("Questions", on_click=lambda: set_tab("questions"), key="tab_questions")
@@ -161,13 +267,20 @@ def mainUI(debugUI=False):
     # Input
     prompt = st.text_input("Enter your theme:")
     if st.button("Generate", type="primary") and prompt:
+        # --- Full session cleanup (except prompt) ---
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+
+        # Optionally re-set prompt (if needed after clearing)
+        st.session_state["last_prompt"] = prompt
+        
         with st.spinner("Processing..."):
             if debugUI:
                 response = {
                     "facts": ["This a great Fact about the topic", "Wow I didn’t know that", "Now I know more about the topic"],
                     "questions": [
-                        {"question": "Is this a question?", "choices": ["1A", "1B", "1C", "1D"], "correct": "1A"},
-                        {"question": "Is this question 2?", "choices": ["2A", "2B", "2C", "2D"], "correct": "2B"}
+                        {"question": "Is this a question?", "options": ["1A", "1B", "1C", "1D"], "correct_answer": "1A"},
+                        {"question": "Is this question 2?", "options": ["2A", "2B", "2C", "2D"], "correct_answer": "2B"}
                     ],
                     "summary": "This is a concise summary explaining the topic in a few lines."
                 }
